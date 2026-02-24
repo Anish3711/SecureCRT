@@ -98,7 +98,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        // If email not confirmed, we need to handle it differently
+        // This is a limitation of Supabase's built-in auth requiring email confirmation
+        if (error.message.includes('Email not confirmed')) {
+          throw new Error('Please check your email to confirm your account before signing in.')
+        }
+        throw error
+      }
     } catch (error) {
       console.error('Error signing in:', error)
       throw error
