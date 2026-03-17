@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -49,6 +49,7 @@ export default function AnalyticsPage() {
   const [averagePassRate, setAveragePassRate] = useState(0)
 
   useEffect(() => {
+    const supabase = createClient()
     const fetchAnalytics = async () => {
       try {
         if (!user?.id) return

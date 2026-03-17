@@ -6,41 +6,75 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuth } from '@/contexts/auth-context'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 export default function SignupPage() {
   const router = useRouter()
-  const { signUp } = useAuth()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState<'admin' | 'student'>('student')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
 
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match')
+      setError('Passwords do not match')
       return
     }
 
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters')
+      setError('Password must be at least 6 characters')
       return
     }
 
     setLoading(true)
 
     try {
-      await signUp(email, password, fullName, role)
+      // Use our API route that creates users with auto-confirmed emails
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          role,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to sign up')
+      }
+
+      // After successful signup, sign in the user
+      const supabase = createClient()
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        // User was created but couldn't sign in - redirect to login
+        toast.success('Account created! Please sign in.')
+        router.push('/auth/login')
+        return
+      }
+
       toast.success('Account created successfully')
-      router.push('/auth/login')
-    } catch (error) {
-      console.error('Signup error:', error)
-      toast.error('Failed to create account')
+      router.push('/')
+    } catch (err) {
+      console.error('Signup error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to create account')
     } finally {
       setLoading(false)
     }
@@ -130,6 +164,10 @@ export default function SignupPage() {
                 <option value="admin">Admin</option>
               </select>
             </div>
+
+            {error && (
+              <p className="text-sm text-red-500">{error}</p>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Creating account...' : 'Sign Up'}

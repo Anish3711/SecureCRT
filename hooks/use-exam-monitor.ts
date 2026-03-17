@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 interface CheatingEvent {
@@ -86,6 +86,7 @@ export function useExamMonitor(enrollmentId: string, isExamActive: boolean) {
     if (loggingRef.current) return
 
     loggingRef.current = true
+    const supabase = createClient()
 
     try {
       const eventKey = event.eventType

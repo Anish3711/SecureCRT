@@ -6,27 +6,42 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuth } from '@/contexts/auth-context'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError(null)
+    const supabase = createClient()
 
     try {
-      await signIn(email, password)
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        if (error.message.includes('Email not confirmed')) {
+          setError('Please check your email to confirm your account before signing in.')
+        } else {
+          setError(error.message)
+        }
+        return
+      }
+
       toast.success('Login successful')
-      router.push('/dashboard')
-    } catch (error) {
-      console.error('Login error:', error)
-      toast.error('Invalid email or password')
+      router.push('/')
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -71,6 +86,10 @@ export default function LoginPage() {
               />
             </div>
 
+            {error && (
+              <p className="text-sm text-red-500">{error}</p>
+            )}
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
@@ -78,7 +97,7 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center text-sm">
             <p className="text-slate-600">
-              Don't have an account?{' '}
+              {"Don't have an account? "}
               <Link href="/auth/signup" className="font-semibold text-blue-600 hover:underline">
                 Sign up
               </Link>

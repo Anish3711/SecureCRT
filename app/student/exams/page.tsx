@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/contexts/auth-context'
@@ -31,6 +31,7 @@ export default function StudentExamsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const supabase = createClient()
     const fetchData = async () => {
       try {
         // Fetch published exams
@@ -76,6 +77,7 @@ export default function StudentExamsPage() {
 
   const handleStartExam = async (examId: string) => {
     if (!user?.id) return
+    const supabase = createClient()
 
     try {
       // Check if already enrolled

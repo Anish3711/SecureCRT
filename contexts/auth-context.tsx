@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 
 interface AuthContextType {
   user: User | null
@@ -21,6 +21,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const supabase = createClient()
+    
     // Check if user is already logged in
     const checkAuth = async () => {
       try {
@@ -62,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string, role: 'admin' | 'student') => {
+    const supabase = createClient()
     try {
       // Use our API route that uses admin client to bypass email confirmation
       const response = await fetch('/api/auth/signup', {
@@ -97,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    const supabase = createClient()
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -104,8 +108,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (error) {
-        // If email not confirmed, we need to handle it differently
-        // This is a limitation of Supabase's built-in auth requiring email confirmation
         if (error.message.includes('Email not confirmed')) {
           throw new Error('Please check your email to confirm your account before signing in.')
         }
@@ -118,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    const supabase = createClient()
     try {
       const { error } = await supabase.auth.signOut()
       if (error) throw error

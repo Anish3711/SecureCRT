@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { ExamInterface } from '@/components/exam-interface'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ export default function TakeExamPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const supabase = createClient()
     const setupExam = async () => {
       try {
         if (!user?.id) return

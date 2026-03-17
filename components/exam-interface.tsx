@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
@@ -40,6 +40,7 @@ export function ExamInterface({ examId, enrollmentId, onExamEnd }: ExamInterface
   useExamMonitor(enrollmentId, true)
 
   useEffect(() => {
+    const supabase = createClient()
     const fetchExamData = async () => {
       try {
         // Fetch exam duration and settings
@@ -77,7 +78,7 @@ export function ExamInterface({ examId, enrollmentId, onExamEnd }: ExamInterface
 
   // Timer
   useEffect(() => {
-    if (timeLeft <= 0) {
+    if (timeLeft <= 0 && !loading && questions.length > 0) {
       handleSubmitExam()
       return
     }
@@ -87,7 +88,7 @@ export function ExamInterface({ examId, enrollmentId, onExamEnd }: ExamInterface
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [timeLeft])
+  }, [timeLeft, loading, questions.length])
 
   const handleAnswerSelect = (questionId: string, answerId: string) => {
     const newAnswers = new Map(answers)
@@ -98,6 +99,7 @@ export function ExamInterface({ examId, enrollmentId, onExamEnd }: ExamInterface
   const handleSubmitExam = useCallback(async () => {
     if (submitting) return
     setSubmitting(true)
+    const supabase = createClient()
 
     try {
       let totalMarks = 0
@@ -145,7 +147,7 @@ export function ExamInterface({ examId, enrollmentId, onExamEnd }: ExamInterface
         is_passed: isPassed,
         correct_answers: correctAnswers,
         total_questions: questions.length,
-        time_taken_seconds: (questions[0] ? (questions[0].id ? 0 : 0) : 0),
+        time_taken_seconds: 0,
         submitted_at: new Date().toISOString(),
       })
 
@@ -163,7 +165,7 @@ export function ExamInterface({ examId, enrollmentId, onExamEnd }: ExamInterface
     } finally {
       setSubmitting(false)
     }
-  }, [examId, enrollmentId, questions, answers, onExamEnd])
+  }, [examId, enrollmentId, questions, answers, onExamEnd, submitting])
 
   if (loading) {
     return <div>Loading exam...</div>
@@ -188,14 +190,14 @@ export function ExamInterface({ examId, enrollmentId, onExamEnd }: ExamInterface
         <CardContent className="pt-6">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm text-slate-600">Question {currentQuestionIndex + 1} of {questions.length}</p>
+              <p className="text-sm text-muted-foreground">Question {currentQuestionIndex + 1} of {questions.length}</p>
               <Progress value={progress} className="mt-2 w-48" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-slate-900">
+              <p className="text-2xl font-bold">
                 {minutes}:{seconds.toString().padStart(2, '0')}
               </p>
-              <p className="text-sm text-slate-600">Time left</p>
+              <p className="text-sm text-muted-foreground">Time left</p>
             </div>
           </div>
         </CardContent>
@@ -206,7 +208,7 @@ export function ExamInterface({ examId, enrollmentId, onExamEnd }: ExamInterface
         <CardHeader>
           <CardTitle>
             {currentQuestion.question_text}
-            <span className="ml-2 text-sm font-normal text-slate-600">({currentQuestion.marks} marks)</span>
+            <span className="ml-2 text-sm font-normal text-muted-foreground">({currentQuestion.marks} marks)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -262,10 +264,10 @@ export function ExamInterface({ examId, enrollmentId, onExamEnd }: ExamInterface
                 onClick={() => setCurrentQuestionIndex(index)}
                 className={`w-8 h-8 rounded text-sm font-medium ${
                   index === currentQuestionIndex
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary text-primary-foreground'
                     : answers.has(q.id)
                       ? 'bg-green-100 text-green-700 border border-green-300'
-                      : 'bg-slate-100 text-slate-700 border border-slate-300'
+                      : 'bg-muted text-muted-foreground border'
                 }`}
               >
                 {index + 1}
