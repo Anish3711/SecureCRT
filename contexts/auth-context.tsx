@@ -63,28 +63,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string, role: 'admin' | 'student') => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role,
-          },
+      // Use our API route that uses admin client to bypass email confirmation
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          role,
+        }),
       })
 
-      if (error) throw error
+      const data = await response.json()
 
-      // Create user record in users table
-      if (data.user) {
-        await supabase.from('users').insert({
-          id: data.user.id,
-          email,
-          full_name: fullName,
-          role,
-        })
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to sign up')
       }
+
+      // After successful signup, sign in the user
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) throw signInError
     } catch (error) {
       console.error('Error signing up:', error)
       throw error
