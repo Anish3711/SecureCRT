@@ -6,6 +6,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Force clean build
+  cleanDistDir: true,
 }
 
 export default nextConfig
